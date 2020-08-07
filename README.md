@@ -14,9 +14,6 @@ It can enumerate websites that have wildcard response enabled
 ### Development
 
 Want to contribute? Great!
-
-I'd like that but I don't know how you can(new to GitHub and all this VCS thing)\
-If you know how and want to contribute contact me.\
 Help is always welcome.
 
 License
