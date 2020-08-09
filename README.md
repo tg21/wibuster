@@ -35,7 +35,7 @@ Help is always welcome.
 License
 ----
 
-It has none.(what is this deal with all license stuff and how do I get one?)
+Apache 2.0
 
 
 **Free Software, yeah enjoy!**
