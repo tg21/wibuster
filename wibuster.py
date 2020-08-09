@@ -1,13 +1,12 @@
 try:
     import requests
 except ModuleNotFoundError as e:
-    print("requests in not install run $pip3 install requests and try again.Thanks!")
-import _thread
+    print("requests in not install run $pip3 install requests and try again. Thanks!")
 import threading
 import random
 import string
 import math
-sucPaths = []
+import argparse
 
 exitFlag = 0
 
@@ -16,34 +15,36 @@ buster = "soph"
 wild = False
 host = "http://localhost"
 wildLength = 0
+sucPaths = []
+extentions = []
 
-def sophBuster(h, p):#buster for sophisticated servers that accept head requests
+def sophBuster(h, p, e):#buster for sophisticated servers that accept head requests
     try:
         # print("requesting",h+"/"+p)
-        r = requests.head(h+"/"+p)
+        r = requests.head(h+"/"+p+e)
         return r.status_code    
     except requests.ConnectionError as e:
         return e
 
-def unSophBuster(h,p):
+def unSophBuster(h, p, e):
     try:
-        r = requests.get(h+"/"+p)
+        r = requests.get(h+"/"+p+e)
         # print("requesting",h+"/"+p)
         return r.status_code
     except requests.ConnectionError as e:
         return e
 
-def wildSophBuster(h, p):#buster for sophisticated servers that accept head requests
+def wildSophBuster(h, p, e):#buster for sophisticated servers that accept head requests
     try:
         # print("requesting",h+"/"+p)
-        r = requests.head(h+"/"+p)
+        r = requests.head(h+"/"+p+e)
         return r.status_code,len(r.text)    
     except requests.ConnectionError as e:
         return e
 
-def wildUnSophBuster(h,p):
+def wildUnSophBuster(h, p, e):
     try:
-        r = requests.get(h+"/"+p)
+        r = requests.get(h+"/"+p+e)
         # print("requesting",h+"/"+p)
         return r.status_code,len(r.text)
     except requests.ConnectionError as e:
@@ -55,33 +56,38 @@ def bust(paths):
     global wild
     global wildLength
     global host
+    global extentions
     if(buster == "soph" and wild == False):
         for i in range(len(paths)):
-            status = sophBuster(host,paths[i])
-            if(status==200):#200ish
-                sucPaths.append(paths[i])
-                print("/"+paths[i]+"\n")
+            for e in extentions:
+                status = sophBuster(host,paths[i],e)
+                if(status==200):#200ish
+                    sucPaths.append(paths[i]+e)
+                    print("/"+paths[i]+e)
 
     if(buster == "unsoph" and wild == False):
         for i in range(len(paths)):
-            status = unSophBuster(host,paths[i])
-            if(status==200):#200ish
-                sucPaths.append(paths[i])
-                print("/"+paths[i]+"\n")
+            for e in extentions:
+                status = unSophBuster(host,paths[i],e)
+                if(status==200):#200ish
+                    sucPaths.append(paths[i]+e)
+                    print("/"+paths[i]+e)
 
     if(buster == "soph" and wild == True):
         for i in range(len(paths)):
-            status,tLength = wildSophBuster(host,paths[i])
-            if(status==200 and tLength != wildLength):#200ish
-                sucPaths.append(paths[i])
-                print("/"+paths[i]+"\n")
+            for e in extentions:
+                status,tLength = wildSophBuster(host,paths[i],e)
+                if(status==200 and tLength != wildLength):#200ish
+                    sucPaths.append(paths[i]+e)
+                    print("/"+paths[i]+e)
 
     if(buster == "unsoph" and wild == True):
         for i in range(len(paths)):
-            status,tLength = wildUnSophBuster(host,paths[i])
-            if(status==200 and tLength != wildLength):#200ish
-                sucPaths.append(paths[i])
-                print("/"+paths[i]+"\n")
+            for e in extentions:
+                status,tLength = wildUnSophBuster(host,paths[i],e)
+                if(status==200 and tLength != wildLength):#200ish
+                    sucPaths.append(paths[i]+e)
+                    print("/"+paths[i]+e)
 
 
 class BusterThreads (threading.Thread):
@@ -91,26 +97,11 @@ class BusterThreads (threading.Thread):
       self.name = name
       self.paths = paths
    def run(self):
-      print ("Starting " + self.name)
+      # print ("Starting " + self.name)
       bust(self.paths)
-      print ("Exiting " + self.name)
+      # print ("Exiting " + self.name)
 
 ### divide lists for multithreading
-def slice_list(input, size):
-    input_size = len(input)
-    slice_size = input_size // size
-    remain = input_size % size
-    result = []
-    iterator = iter(input)
-    for i in range(size):
-        result.append([])
-        for j in range(slice_size):
-            result[i].append(iterator.next())
-        if remain:
-            result[i].append(iterator.next())
-            remain -= 1
-    return result
-
 
 def divide_list(input,size):
     list_of_lists = []
@@ -126,7 +117,14 @@ def divide_list(input,size):
             
 def main():
     print("Wbuster v0.1 \n")
-    print("this will test for paths .html,folder,.php,.py,.jsp,.asp files primarily")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('host',help="Host to enumerate")
+    parser.add_argument('extentions',help='extentions to look for [space seperated string] e.g=".html .php"')
+    parser.add_argument('dictionary',help='path of dictionary file to be used')
+    parser.add_argument('threads', type=int , default=10, help='no. of threads to be used, default = 10')
+
+    args = parser.parse_args()
+    
     dictfile = "directory-list-1.0.txt"
 
     threadCount = 10
@@ -139,37 +137,56 @@ def main():
     global wild
     global wildLength
     global host
+    global extentions
 
-    with open(dictfile) as file:
-        # line=file.readline()
-        for line in file:
-            if(line.startswith("#")):
-                continue
-            else:
-                paths.append(line.rstrip("\n"))
+    host = args.host
+    extentions = args.extentions.strip().split()
+    extentions.append("")
+    dictfile = args.dictionary
+    threadCount = args.threads
 
+    
+
+    try:
+        with open(dictfile) as file:
+            # line=file.readline()
+            for line in file:
+                if(line.startswith("#")):
+                    continue
+                else:
+                    paths.append(line.rstrip("\n"))
+    except:
+        print("Error Reading Dictionary")
+        exit
+
+    print(f"""
+    Target Host : {host}\n
+    Extentions : {extentions}\n
+    Dictionay : {dictfile}\n
+    Thread Count : {threadCount}
+    """)
 
     rand = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(20))
     # rand = "wrwqfsifasf"
     paths = divide_list(paths,threadCount)
 
     #inital tests
-    status = sophBuster(host,"")
+    status = sophBuster(host,"","")
     if(status==501):
         buster = "unsoph"
 
     if(buster == "soph"):
-        status,tLength = wildSophBuster(host,rand)
+        status,tLength = wildSophBuster(host,rand,"")
         if(status==200):#200ish
             wild = True
             wildLength = tLength
-            print("wild card support detected using advenced method")
+            print("wild card support detected using advenced method\n")
     else:
-        status,tLength = wildUnSophBuster(host,rand)
+        status,tLength = wildUnSophBuster(host,rand,"")
         if(status==200):#200ish
             wild = True
             wildLength = tLength
-            print("wild card support detected using advenced method")
+            print("wild card support detected using advenced method\n")
 
     threadList = []
     for t in range(0,len(paths)):
