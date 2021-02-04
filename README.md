@@ -1,7 +1,5 @@
 # WiBuster
 A Website enumerator that can tackle wild card response. \
-currently is only functional enough to show that it is possible. 
-
 
 ### It is programmed in python3
 It can enumerate web servers that send response code 200 even when the file is not present.
